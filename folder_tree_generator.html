@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folder Tree Generator & Documentation Tool</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffaff',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              900: '#164e63',
+            },
+            darkbg: '#0f172a',
+            darkcard: '#1e293b',
+            darkborder: '#334155'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Custom Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    
+    /* Code Line Numbers */
+    .line-numbers {
+      counter-reset: line;
+    }
+    .line-numbers > div::before {
+      counter-increment: line;
+      content: counter(line);
+      display: inline-block;
+      width: 2.5rem;
+      padding-right: 0.8rem;
+      margin-right: 0.8rem;
+      color: #475569;
+      text-align: right;
+      border-right: 1px solid #334155;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-darkbg text-slate-100 font-sans min-h-screen flex flex-col selection:bg-brand-500 selection:text-white antialiased">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-darkborder bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-xl shadow-lg shadow-brand-500/20 text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">
+            Folder Tree Generator
+          </h1>
+          <p class="text-xs text-slate-400">Directory structure visualizer & documentation export</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Top Bar -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <button id="demo-btn" class="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-medium transition-all duration-150">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+          </svg>
+          <span class="hidden sm:inline">Load Sample Project</span>
+          <span class="sm:hidden">Demo</span>
+        </button>
+
+        <button id="clear-btn" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition" title="Clear Project">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Bar -->
+  <section class="bg-slate-900/60 border-b border-darkborder/60 py-2.5 px-4 sm:px-8">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+      <div class="flex items-center space-x-6 overflow-x-auto py-1">
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-500">Files:</span>
+          <span id="stat-files" class="font-mono text-slate-200 font-semibold">0</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-500">Directories:</span>
+          <span id="stat-dirs" class="font-mono text-slate-200 font-semibold">0</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-500">Max Depth:</span>
+          <span id="stat-depth" class="font-mono text-slate-200 font-semibold">0</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-500">Total Size:</span>
+          <span id="stat-size" class="font-mono text-slate-200 font-semibold">0 B</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-500">Filtered Out:</span>
+          <span id="stat-filtered" class="font-mono text-amber-400 font-semibold">0</span>
+        </div>
+      </div>
+      <div id="root-path-badge" class="hidden sm:flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono text-[11px] truncate max-w-xs">
+        <span>📁</span>
+        <span id="root-folder-name">No Folder Loaded</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main App Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- LEFT SIDEBAR: Controls, Config & Upload -->
+    <div class="lg:col-span-4 flex flex-col space-y-5">
+      
+      <!-- Drop Zone & File Input -->
+      <div class="bg-darkcard rounded-xl border border-darkborder p-4 shadow-xl">
+        <h2 class="text-sm font-semibold text-slate-200 mb-3 flex items-center justify-between">
+          <span>Folder Input</span>
+          <span class="text-[10px] uppercase font-bold text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded">Local</span>
+        </h2>
+        
+        <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-brand-500 transition-colors duration-200 rounded-lg p-5 text-center bg-slate-900/50 cursor-pointer group flex flex-col items-center justify-center">
+          <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden" />
+          <div class="w-12 h-12 mb-3 rounded-full bg-slate-800 group-hover:bg-brand-500/20 text-brand-400 flex items-center justify-center transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 0115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+          </div>
+          <p class="text-xs font-medium text-slate-300 group-hover:text-white">
+            Click to select folder or drag & drop here
+          </p>
+          <p class="text-[11px] text-slate-500 mt-1">
+            Browser processes files locally (no server upload)
+          </p>
+        </div>
+      </div>
+
+      <!-- Customization Options -->
+      <div class="bg-darkcard rounded-xl border border-darkborder p-4 shadow-xl flex flex-col space-y-4">
+        <h2 class="text-sm font-semibold text-slate-200 flex items-center justify-between border-b border-darkborder pb-2">
+          <span>Tree Customization</span>
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 010 4m-6 8a2 2 0 100-4m0 4a2 2 0 010-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 010-4m0 4v2m0-6V4"></path>
+          </svg>
+        </h2>
+
+        <!-- Style Selector -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Tree Line Style</label>
+          <select id="style-select" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            <option value="unicode">Unicode Clean (├── └── │)</option>
+            <option value="ascii">Classic ASCII (|-- \-- |)</option>
+            <option value="emoji">Emoji Prefix (📁 📄 + Unicode)</option>
+            <option value="indented">Simple Indented Spaces</option>
+            <option value="custom">Custom Graphic Markers</option>
+          </select>
+        </div>
+
+        <!-- Custom Symbols Input (Shown when custom style selected) -->
+        <div id="custom-symbols-group" class="hidden grid grid-cols-2 gap-2 p-2 bg-slate-900/60 rounded-lg border border-slate-800">
+          <div>
+            <label class="block text-[10px] text-slate-400">Branch Marker</label>
+            <input type="text" id="symbol-branch" value="├── " class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono" />
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400">Last Marker</label>
+            <input type="text" id="symbol-last" value="└── " class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono" />
+          </div>
+        </div>
+
+        <!-- Max Depth Slider -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-medium text-slate-400">Max Depth Limit</label>
+            <span id="depth-val" class="text-xs font-mono text-brand-400 font-bold">Unlimited</span>
+          </div>
+          <input type="range" id="depth-slider" min="1" max="15" value="15" class="w-full accent-brand-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+        </div>
+
+        <!-- Filter Toggles -->
+        <div class="space-y-2 pt-1 border-t border-slate-800">
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="toggle-dotfiles" checked class="rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-500/20" />
+            <span>Hide Dotfiles / Hidden Files (<code>.*</code>)</span>
+          </label>
+
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="toggle-dirs-only" class="rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-500/20" />
+            <span>Show Directories Only</span>
+          </label>
+
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="toggle-sort-dirs" checked class="rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-500/20" />
+            <span>Sort Folders Before Files</span>
+          </label>
+
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="toggle-show-sizes" class="rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-500/20" />
+            <span>Include File Sizes in Text Output</span>
+          </label>
+        </div>
+
+        <!-- Pre-configured Ignores Quick Chips -->
+        <div class="pt-2 border-t border-slate-800">
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Common Ignore Quick Toggles</label>
+          <div class="flex flex-wrap gap-1.5" id="ignore-chips-container">
+            <!-- Dynamic Chips -->
+          </div>
+        </div>
+
+        <!-- Custom Ignore Patterns -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Custom Ignore Patterns (comma or line separated)</label>
+          <textarea id="ignore-patterns-input" rows="2" placeholder="e.g. *.log, temp, dist, .env" class="w-full bg-slate-900 border border-darkborder rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500 placeholder-slate-600"></textarea>
+        </div>
+      </div>
+
+      <!-- Documentation Mode & Annotations Panel -->
+      <div class="bg-darkcard rounded-xl border border-darkborder p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+            <span>Documentation Mode</span>
+          </h2>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="doc-mode-toggle" checked class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+          </label>
+        </div>
+        <p class="text-xs text-slate-400">Append descriptive notes to files and directories.</p>
+
+        <div id="doc-options" class="space-y-3 pt-2">
+          <button id="auto-annotate-btn" class="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30 rounded-lg text-xs font-medium flex items-center justify-center space-x-2 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <span>Auto-Annotate Standard Project Files</span>
+          </button>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Comment Style</label>
+              <select id="comment-style-select" class="w-full bg-slate-900 border border-darkborder rounded px-2 py-1 text-xs text-slate-200">
+                <option value="#">Hash (# note)</option>
+                <option value="//">Slash (// note)</option>
+                <option value="--">Dash (-- note)</option>
+                <option value="/*">Block (/* note */)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Min Alignment Pad</label>
+              <input type="number" id="align-padding-input" value="32" min="15" max="80" class="w-full bg-slate-900 border border-darkborder rounded px-2 py-1 text-xs text-slate-200" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT MAIN PANEL: Tabbed Visual & Formatted Views -->
+    <div class="lg:col-span-8 flex flex-col space-y-4">
+
+      <!-- View Selector Tabs & Toolbar -->
+      <div class="bg-darkcard border border-darkborder rounded-xl p-2 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+        <div class="flex space-x-1 bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+          <button id="tab-visual" class="tab-btn active px-3.5 py-1.5 rounded-md text-xs font-medium transition text-white bg-brand-600 shadow-sm flex items-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+            <span>Interactive Tree</span>
+          </button>
+          <button id="tab-formatted" class="tab-btn px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+            </svg>
+            <span>Formatted Output</span>
+          </button>
+          <button id="tab-export" class="tab-btn px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>Export Formats</span>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- Copy Button -->
+          <button id="copy-btn" class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+            </svg>
+            <span>Copy Text</span>
+          </button>
+
+          <!-- Download Button -->
+          <button id="download-btn" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium flex items-center space-x-1.5 shadow-md transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 1: INTERACTIVE VISUAL TREE VIEW -->
+      <div id="view-visual" class="tab-content bg-darkcard border border-darkborder rounded-xl p-4 flex-1 flex flex-col min-h-[500px]">
+        <!-- Search & Control sub-bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 pb-3 border-b border-darkborder">
+          <div class="relative flex-1 min-w-[200px]">
+            <input type="text" id="node-search-input" placeholder="Search files or annotations..." class="w-full bg-slate-900 border border-darkborder rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" />
+            <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <button id="expand-all-btn" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition">Expand All</button>
+            <button id="collapse-all-btn" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition">Collapse All</button>
+          </div>
+        </div>
+
+        <!-- Tree Nodes Container -->
+        <div id="visual-tree-container" class="flex-1 overflow-y-auto max-h-[600px] font-mono text-xs pr-2 space-y-1">
+          <!-- Dynamic Nodes Rendered Here -->
+        </div>
+      </div>
+
+      <!-- TAB 2: FORMATTED OUTPUT VIEW -->
+      <div id="view-formatted" class="tab-content hidden bg-darkcard border border-darkborder rounded-xl p-4 flex-1 flex flex-col min-h-[500px]">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-darkborder">
+          <span class="text-xs font-semibold text-slate-300">Live Formatted Preview</span>
+          <div class="flex items-center space-x-3 text-xs">
+            <label class="flex items-center space-x-1.5 text-slate-400 cursor-pointer">
+              <input type="checkbox" id="toggle-line-numbers" checked class="rounded border-slate-700 bg-slate-900 text-brand-500" />
+              <span>Line Numbers</span>
+            </label>
+            <label class="flex items-center space-x-1.5 text-slate-400 cursor-pointer">
+              <input type="checkbox" id="toggle-word-wrap" class="rounded border-slate-700 bg-slate-900 text-brand-500" />
+              <span>Word Wrap</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex-1 bg-slate-950 rounded-lg p-4 font-mono text-xs border border-slate-800 overflow-auto max-h-[600px]">
+          <pre id="text-output-pre" class="text-slate-300 line-numbers whitespace-pre"></pre>
+        </div>
+      </div>
+
+      <!-- TAB 3: EXPORT FORMATS PANEL -->
+      <div id="view-export" class="tab-content hidden bg-darkcard border border-darkborder rounded-xl p-4 flex-1 space-y-4">
+        <h3 class="text-sm font-semibold text-slate-200">Select Export Format</h3>
+        <p class="text-xs text-slate-400">Choose your target format to customize structure or copy specific code blocks.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Plain Text Card -->
+          <div class="format-card bg-slate-900/90 border border-slate-800 rounded-lg p-3 hover:border-brand-500/50 transition cursor-pointer" data-format="txt">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-brand-400">Plain Text (.txt)</span>
+              <button class="export-copy-btn px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[11px] rounded text-slate-300" data-format="txt">Copy</button>
+            </div>
+            <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-400 h-24 overflow-hidden" id="export-preview-txt"></pre>
+          </div>
+
+          <!-- Markdown Card -->
+          <div class="format-card bg-slate-900/90 border border-slate-800 rounded-lg p-3 hover:border-brand-500/50 transition cursor-pointer" data-format="md">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-indigo-400">Markdown (.md)</span>
+              <button class="export-copy-btn px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[11px] rounded text-slate-300" data-format="md">Copy</button>
+            </div>
+            <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-400 h-24 overflow-hidden" id="export-preview-md"></pre>
+          </div>
+
+          <!-- JSON Card -->
+          <div class="format-card bg-slate-900/90 border border-slate-800 rounded-lg p-3 hover:border-brand-500/50 transition cursor-pointer" data-format="json">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-400">JSON Structure (.json)</span>
+              <button class="export-copy-btn px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[11px] rounded text-slate-300" data-format="json">Copy</button>
+            </div>
+            <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-400 h-24 overflow-hidden" id="export-preview-json"></pre>
+          </div>
+
+          <!-- HTML List Card -->
+          <div class="format-card bg-slate-900/90 border border-slate-800 rounded-lg p-3 hover:border-brand-500/50 transition cursor-pointer" data-format="html">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-amber-400">HTML List (&lt;ul&gt;&lt;li&gt;)</span>
+              <button class="export-copy-btn px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[11px] rounded text-slate-300" data-format="html">Copy</button>
+            </div>
+            <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-400 h-24 overflow-hidden" id="export-preview-html"></pre>
+          </div>
+
+          <!-- YAML Card -->
+          <div class="format-card bg-slate-900/90 border border-slate-800 rounded-lg p-3 hover:border-brand-500/50 transition cursor-pointer" data-format="yaml">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-rose-400">YAML (.yml)</span>
+              <button class="export-copy-btn px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[11px] rounded text-slate-300" data-format="yaml">Copy</button>
+            </div>
+            <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-400 h-24 overflow-hidden" id="export-preview-yaml"></pre>
+          </div>
+
+          <!-- XML Card -->
+          <div class="format-card bg-slate-900/90 border border-slate-800 rounded-lg p-3 hover:border-brand-500/50 transition cursor-pointer" data-format="xml">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-cyan-400">XML Structure (.xml)</span>
+              <button class="export-copy-btn px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[11px] rounded text-slate-300" data-format="xml">Copy</button>
+            </div>
+            <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-400 h-24 overflow-hidden" id="export-preview-xml"></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Annotation Edit Modal -->
+  <div id="annotation-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-darkcard border border-darkborder rounded-xl p-5 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-darkborder pb-2">
+        <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+          <span>Edit Node Annotation</span>
+        </h3>
+        <button id="modal-close" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+
+      <div>
+        <p class="text-xs text-slate-400 mb-1">Target item:</p>
+        <p id="modal-node-path" class="text-xs font-mono text-brand-400 font-semibold bg-slate-900 p-2 rounded border border-slate-800 break-all"></p>
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-300 mb-1">Description / Documentation Note</label>
+        <input type="text" id="modal-note-input" placeholder="e.g., Main entry component for React UI" class="w-full bg-slate-900 border border-darkborder rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500" />
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button id="modal-cancel-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition">Cancel</button>
+        <button id="modal-save-btn" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition">Save Annotation</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-medium transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Core Application State
+    const state = {
+      rootNode: null,
+      selectedFormat: 'txt', // txt, md, json, html, yaml, xml
+      activeTab: 'visual',
+      
+      // Configuration
+      style: 'unicode', // unicode, ascii, emoji, indented, custom
+      customBranch: '├── ',
+      customLast: '└── ',
+      maxDepth: 15,
+      hideDotfiles: true,
+      dirsOnly: false,
+      sortDirsFirst: true,
+      showFileSizes: false,
+      
+      // Ignore patterns
+      activeIgnores: new Set(['node_modules', '.git', '.DS_Store', 'dist', 'build', '.next', '__pycache__', 'coverage']),
+      customIgnoreText: '',
+      
+      // Documentation Mode
+      docMode: true,
+      commentStyle: '#',
+      alignPadding: 32,
+      
+      // Search
+      searchQuery: '',
+
+      // Currently Editing Node
+      editingNode: null
+    };
+
+    // Dictionary for Auto-Annotate Preset Features
+    const autoAnnotationRules = [
+      { pattern: /^package\.json$/i, note: 'Project dependencies and scripts manifest' },
+      { pattern: /^tsconfig.*\.json$/i, note: 'TypeScript compiler configuration' },
+      { pattern: /^vite\.config\.(js|ts)$/i, note: 'Vite build tool configuration' },
+      { pattern: /^webpack.*\.js$/i, note: 'Webpack bundler settings' },
+      { pattern: /^Dockerfile$/i, note: 'Docker image build container instructions' },
+      { pattern: /^\.env(\.example)?$/i, note: 'Environment variable definitions template' },
+      { pattern: /^\.gitignore$/i, note: 'Git version control exclusion list' },
+      { pattern: /^README\.md$/i, note: 'Project documentation and getting started guide' },
+      { pattern: /^src$/i, note: 'Application source code directory' },
+      { pattern: /^components$/i, note: 'Reusable UI component library' },
+      { pattern: /^hooks$/i, note: 'Custom React state hooks' },
+      { pattern: /^services|api$/i, note: 'API client integration and data fetching' },
+      { pattern: /^public$/i, note: 'Static public web assets' },
+      { pattern: /^assets$/i, note: 'Images, icons, and static media files' },
+      { pattern: /^styles|css$/i, note: 'Global stylesheets and design tokens' },
+      { pattern: /^dist|build|out$/i, note: 'Compiled output distribution directory' },
+      { pattern: /^tests?|__tests__$/i, note: 'Automated test suite specifications' },
+      { pattern: /^index\.html$/i, note: 'Main HTML entry point template' },
+      { pattern: /^App\.(jsx|tsx|js)$/i, note: 'Main root application layout component' },
+      { pattern: /^main\.(jsx|tsx|js)$/i, note: 'Application hydration / mounting script' },
+      { pattern: /^tailwind\.config\.(js|ts)$/i, note: 'Tailwind CSS framework styling setup' }
+    ];
+
+    // Generates a mock fullstack React project structure for testing
+    function createDemoDirectory() {
+      const demoTree = {
+        name: 'my-modern-fullstack-app',
+        path: 'my-modern-fullstack-app',
+        isDirectory: true,
+        size: 0,
+        expanded: true,
+        hiddenByUser: false,
+        annotation: 'Fullstack Web Application Stack',
+        children: [
+          { name: '.env.example', path: 'my-modern-fullstack-app/.env.example', isDirectory: false, size: 420, annotation: 'Environment variable template' },
+          { name: '.gitignore', path: 'my-modern-fullstack-app/.gitignore', isDirectory: false, size: 280, annotation: 'Ignored files for git' },
+          { name: 'README.md', path: 'my-modern-fullstack-app/README.md', isDirectory: false, size: 3450, annotation: 'Project documentation' },
+          { name: 'package.json', path: 'my-modern-fullstack-app/package.json', isDirectory: false, size: 1820, annotation: 'Project dependencies and scripts' },
+          { name: 'tsconfig.json', path: 'my-modern-fullstack-app/tsconfig.json', isDirectory: false, size: 680, annotation: 'TypeScript configuration' },
+          { name: 'vite.config.ts', path: 'my-modern-fullstack-app/vite.config.ts', isDirectory: false, size: 540, annotation: 'Vite build tool configuration' },
+          { name: 'Dockerfile', path: 'my-modern-fullstack-app/Dockerfile', isDirectory: false, size: 310, annotation: 'Docker container specs' },
+          {
+            name: 'public',
+            path: 'my-modern-fullstack-app/public',
+            isDirectory: true,
+            size: 0,
+            expanded: true,
+            annotation: 'Static public assets',
+            children: [
+              { name: 'favicon.ico', path: 'my-modern-fullstack-app/public/favicon.ico', isDirectory: false, size: 15400, annotation: '' },
+              { name: 'logo.svg', path: 'my-modern-fullstack-app/public/logo.svg', isDirectory: false, size: 8200, annotation: '' }
+            ]
+          },
+          {
+            name: 'src',
+            path: 'my-modern-fullstack-app/src',
+            isDirectory: true,
+            size: 0,
+            expanded: true,
+            annotation: 'Source code',
+            children: [
+              {
+                name: 'assets',
+                path: 'my-modern-fullstack-app/src/assets',
+                isDirectory: true,
+                size: 0,
+                expanded: false,
+                children: [
+                  { name: 'react.svg', path: 'my-modern-fullstack-app/src/assets/react.svg', isDirectory: false, size: 4100 }
+                ]
+              },
+              {
+                name: 'components',
+                path: 'my-modern-fullstack-app/src/components',
+                isDirectory: true,
+                size: 0,
+                expanded: true,
+                annotation: 'Reusable UI components',
+                children: [
+                  { name: 'Button.tsx', path: 'my-modern-fullstack-app/src/components/Button.tsx', isDirectory: false, size: 1240, annotation: 'Custom accessible button' },
+                  { name: 'Header.tsx', path: 'my-modern-fullstack-app/src/components/Header.tsx', isDirectory: false, size: 2150, annotation: 'Top navigation header' },
+                  { name: 'Sidebar.tsx', path: 'my-modern-fullstack-app/src/components/Sidebar.tsx', isDirectory: false, size: 3100, annotation: 'App navigation sidebar' },
+                  { name: 'Modal.tsx', path: 'my-modern-fullstack-app/src/components/Modal.tsx', isDirectory: false, size: 1890 }
+                ]
+              },
+              {
+                name: 'hooks',
+                path: 'my-modern-fullstack-app/src/hooks',
+                isDirectory: true,
+                size: 0,
+                expanded: false,
+                annotation: 'Custom React hooks',
+                children: [
+                  { name: 'useAuth.ts', path: 'my-modern-fullstack-app/src/hooks/useAuth.ts', isDirectory: false, size: 1450 },
+                  { name: 'useLocalStorage.ts', path: 'my-modern-fullstack-app/src/hooks/useLocalStorage.ts', isDirectory: false, size: 980 }
+                ]
+              },
+              {
+                name: 'services',
+                path: 'my-modern-fullstack-app/src/services',
+                isDirectory: true,
+                size: 0,
+                expanded: false,
+                annotation: 'API data services',
+                children: [
+                  { name: 'api.ts', path: 'my-modern-fullstack-app/src/services/api.ts', isDirectory: false, size: 2400 }
+                ]
+              },
+              { name: 'App.tsx', path: 'my-modern-fullstack-app/src/App.tsx', isDirectory: false, size: 2800, annotation: 'Root component' },
+              { name: 'main.tsx', path: 'my-modern-fullstack-app/src/main.tsx', isDirectory: false, size: 620, annotation: 'App entry point' },
+              { name: 'index.css', path: 'my-modern-fullstack-app/src/index.css', isDirectory: false, size: 1200 }
+            ]
+          },
+          {
+            name: 'dist',
+            path: 'my-modern-fullstack-app/dist',
+            isDirectory: true,
+            size: 0,
+            expanded: false,
+            children: [
+              { name: 'index.html', path: 'my-modern-fullstack-app/dist/index.html', isDirectory: false, size: 1100 }
+            ]
+          },
+          {
+            name: 'node_modules',
+            path: 'my-modern-fullstack-app/node_modules',
+            isDirectory: true,
+            size: 0,
+            expanded: false,
+            children: [
+              { name: '.bin', path: 'my-modern-fullstack-app/node_modules/.bin', isDirectory: true, children: [] },
+              { name: 'react', path: 'my-modern-fullstack-app/node_modules/react', isDirectory: true, children: [] }
+            ]
+          }
+        ]
+      };
+      
+      calculateTotalDirectorySizes(demoTree);
+      return demoTree;
+    }
+
+    // Recursively computes node sizes
+    function calculateTotalDirectorySizes(node) {
+      if (!node.isDirectory) return node.size || 0;
+      let total = 0;
+      if (node.children) {
+        node.children.forEach(child => {
+          total += calculateTotalDirectorySizes(child);
+        });
+      }
+      node.size = total;
+      return total;
+    }
+
+    // Handle File Input Directory Upload
+    function processUploadedFileList(files) {
+      if (!files || files.length === 0) return;
+      
+      const rootMap = {};
+      let firstDirName = 'Root';
+
+      Array.from(files).forEach(file => {
+        const relativePath = file.webkitRelativePath || file.name;
+        const parts = relativePath.split('/');
+        firstDirName = parts[0] || firstDirName;
+
+        let current = rootMap;
+        parts.forEach((part, idx) => {
+          if (!current[part]) {
+            const isLast = idx === parts.length - 1;
+            current[part] = {
+              _meta: {
+                name: part,
+                path: parts.slice(0, idx + 1).join('/'),
+                isDirectory: !isLast,
+                size: isLast ? file.size : 0,
+                expanded: true,
+                hiddenByUser: false,
+                annotation: ''
+              },
+              _children: {}
+            };
+          }
+          if (idx < parts.length - 1) {
+            current = current[part]._children;
+          }
+        });
+      });
+
+      // Convert recursive map to Tree Node object
+      function mapToNode(obj) {
+        const meta = obj._meta;
+        const childrenKeys = Object.keys(obj._children);
+        if (childrenKeys.length > 0) {
+          meta.isDirectory = true;
+          meta.children = childrenKeys.map(k => mapToNode(obj._children[k]));
+        } else if (meta.isDirectory) {
+          meta.children = [];
+        }
+        return meta;
+      }
+
+      const rootKey = Object.keys(rootMap)[0];
+      if (rootKey) {
+        state.rootNode = mapToNode(rootMap[rootKey]);
+        calculateTotalDirectorySizes(state.rootNode);
+        autoAnnotateTree(state.rootNode);
+        renderApp();
+        showToast(`Loaded directory: ${state.rootNode.name}`);
+      }
+    }
+
+    // Handles drag and drop file directory entry items via Webkit FileSystem API
+    async function processDirectoryDrop(items) {
+      const entries = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+          const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+          if (entry) entries.push(entry);
+        }
+      }
+
+      if (entries.length === 0) return;
+      const rootEntry = entries[0]; // Take primary dropped root folder
+
+      async function readEntry(entry, currentPath = '') {
+        const path = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+        if (entry.isFile) {
+          return new Promise(resolve => {
+            entry.file(f => {
+              resolve({
+                name: entry.name,
+                path: path,
+                isDirectory: false,
+                size: f.size,
+                annotation: ''
+              });
+            }, () => resolve(null));
+          });
+        } else if (entry.isDirectory) {
+          const dirReader = entry.createReader();
+          const children = [];
+          
+          const readAllEntries = async () => {
+            return new Promise((resolve) => {
+              dirReader.readEntries(async (results) => {
+                if (!results.length) {
+                  resolve(children);
+                } else {
+                  for (const childEntry of results) {
+                    const node = await readEntry(childEntry, path);
+                    if (node) children.push(node);
+                  }
+                  resolve(await readAllEntries());
+                }
+              }, () => resolve(children));
+            });
+          };
+
+          const readChildren = await readAllEntries();
+          return {
+            name: entry.name,
+            path: path,
+            isDirectory: true,
+            expanded: true,
+            size: 0,
+            children: readChildren,
+            annotation: ''
+          };
+        }
+        return null;
+      }
+
+      const tree = await readEntry(rootEntry);
+      if (tree) {
+        state.rootNode = tree;
+        calculateTotalDirectorySizes(state.rootNode);
+        autoAnnotateTree(state.rootNode);
+        renderApp();
+        showToast(`Loaded dropped folder: ${state.rootNode.name}`);
+      }
+    }
+
+    // Helper to evaluate if a file or folder should be ignored based on active filter rules
+    function shouldIgnoreNode(node) {
+      if (node.hiddenByUser) return true;
+
+      // Dotfiles filter
+      if (state.hideDotfiles && node.name.startsWith('.') && node.name !== '.' && node.name !== '..') {
+        return true;
+      }
+
+      // Directories only filter
+      if (state.dirsOnly && !node.isDirectory) {
+        return true;
+      }
+
+      // Active preset chip ignores
+      if (state.activeIgnores.has(node.name)) {
+        return true;
+      }
+
+      // Custom pattern ignores (glob/substring)
+      if (state.customIgnoreText.trim()) {
+        const patterns = state.customIgnoreText
+          .split(/[\n,]+/)
+          .map(p => p.trim())
+          .filter(Boolean);
+
+        for (const pat of patterns) {
+          if (pat.startsWith('*')) {
+            const ext = pat.slice(1);
+            if (node.name.endsWith(ext)) return true;
+          } else if (node.name.includes(pat) || node.path.includes(pat)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    // Filters tree recursively and produces clean view structure
+    function getFilteredTree(node, depth = 1) {
+      if (!node) return null;
+      if (shouldIgnoreNode(node)) return null;
+
+      const cloned = { ...node };
+
+      if (node.isDirectory && node.children) {
+        if (depth >= state.maxDepth) {
+          cloned.children = [];
+        } else {
+          let children = node.children
+            .map(c => getFilteredTree(c, depth + 1))
+            .filter(Boolean);
+
+          if (state.sortDirsFirst) {
+            children.sort((a, b) => {
+              if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name);
+              return a.isDirectory ? -1 : 1;
+            });
+          } else {
+            children.sort((a, b) => a.name.localeCompare(b.name));
+          }
+
+          cloned.children = children;
+        }
+      }
+
+      return cloned;
+    }
+
+    // Auto-annotates common standard developer project files
+    function autoAnnotateTree(node) {
+      if (!node) return;
+      
+      for (const rule of autoAnnotationRules) {
+        if (rule.pattern.test(node.name)) {
+          if (!node.annotation) {
+            node.annotation = rule.note;
+          }
+          break;
+        }
+      }
+
+      if (node.children) {
+        node.children.forEach(child => autoAnnotateTree(child));
+      }
+    }
+
+    // Format Tree to Clean Plain Text / Unicode / ASCII Representation
+    function generateTextTree(node) {
+      if (!node) return 'No folder loaded or all files filtered out.';
+
+      const lines = [];
+      const commentStyle = state.commentStyle || '#';
+      const padWidth = parseInt(state.alignPadding, 10) || 32;
+
+      // Select line graphics based on user style settings
+      let branchSym = '├── ';
+      let lastSym = '└── ';
+      let verticalSym = '│   ';
+      let indentSym = '    ';
+      let useEmoji = false;
+
+      if (state.style === 'ascii') {
+        branchSym = '|-- ';
+        lastSym = '\\-- ';
+        verticalSym = '|   ';
+        indentSym = '    ';
+      } else if (state.style === 'emoji') {
+        useEmoji = true;
+      } else if (state.style === 'indented') {
+        branchSym = '  ';
+        lastSym = '  ';
+        verticalSym = '  ';
+        indentSym = '  ';
+      } else if (state.style === 'custom') {
+        branchSym = state.customBranch || '├── ';
+        lastSym = state.customLast || '└── ';
+      }
+
+      // Root line
+      let rootLabel = node.name + (node.isDirectory ? '/' : '');
+      if (useEmoji) {
+        rootLabel = (node.isDirectory ? '📁 ' : '📄 ') + rootLabel;
+      }
+      if (state.showFileSizes && node.size) {
+        rootLabel += ` (${formatBytes(node.size)})`;
+      }
+      if (state.docMode && node.annotation) {
+        rootLabel = padText(rootLabel, padWidth) + ` ${commentStyle} ${node.annotation}`;
+      }
+      lines.push(rootLabel);
+
+      // Recursive builder
+      function buildLines(currNode, prefix = '') {
+        if (!currNode.children) return;
+
+        const children = currNode.children;
+        const total = children.length;
+
+        children.forEach((child, index) => {
+          const isLast = index === total - 1;
+          const connector = isLast ? lastSym : branchSym;
+
+          let nameStr = child.name + (child.isDirectory ? '/' : '');
+          if (useEmoji) {
+            nameStr = (child.isDirectory ? '📁 ' : '📄 ') + nameStr;
+          }
+
+          if (state.showFileSizes && child.size) {
+            nameStr += ` (${formatBytes(child.size)})`;
+          }
+
+          let lineStr = prefix + connector + nameStr;
+
+          if (state.docMode && child.annotation) {
+            lineStr = padText(lineStr, padWidth) + ` ${commentStyle} ${child.annotation}`;
+          }
+
+          lines.push(lineStr);
+
+          if (child.isDirectory && child.children && child.children.length > 0) {
+            const nextPrefix = prefix + (isLast ? indentSym : verticalSym);
+            buildLines(child, nextPrefix);
+          }
+        });
+      }
+
+      buildLines(node, '');
+      return lines.join('\n');
+    }
+
+    // Padding helper for clean comment column alignment
+    function padText(text, length) {
+      if (text.length >= length) return text + '  ';
+      return text + ' '.repeat(length - text.length);
+    }
+
+    // Byte formatter
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function generateExportContent(format) {
+      const filtered = getFilteredTree(state.rootNode);
+      if (!filtered) return 'No folder loaded.';
+
+      switch (format) {
+        case 'txt':
+          return generateTextTree(filtered);
+
+        case 'md':
+          return `\`\`\`text\n${generateTextTree(filtered)}\n\`\`\``;
+
+        case 'json':
+          function simplifyForJson(n) {
+            const item = {
+              name: n.name,
+              type: n.isDirectory ? 'directory' : 'file',
+              size: n.size
+            };
+            if (n.annotation) item.description = n.annotation;
+            if (n.isDirectory && n.children) {
+              item.children = n.children.map(simplifyForJson);
+            }
+            return item;
+          }
+          return JSON.stringify(simplifyForJson(filtered), null, 2);
+
+        case 'html':
+          function nodeToHtml(n) {
+            let html = `<li><span class="name">${escapeHtml(n.name)}${n.isDirectory ? '/' : ''}</span>`;
+            if (n.annotation) html += ` <span class="comment"><!-- ${escapeHtml(n.annotation)} --></span>`;
+            if (n.isDirectory && n.children && n.children.length > 0) {
+              html += '\n<ul>\n' + n.children.map(nodeToHtml).join('\n') + '\n</ul>';
+            }
+            html += '</li>';
+            return html;
+          }
+          return `<ul class="folder-tree">\n${nodeToHtml(filtered)}\n</ul>`;
+
+        case 'yaml':
+          function nodeToYaml(n, indent = 0) {
+            const spaces = ' '.repeat(indent);
+            let y = `${spaces}${n.name}:`;
+            if (n.annotation) y += ` # ${n.annotation}`;
+            if (!n.isDirectory) {
+              return `${spaces}${n.name}: null${n.annotation ? ' # ' + n.annotation : ''}`;
+            }
+            if (n.children && n.children.length > 0) {
+              const childrenYaml = n.children.map(c => nodeToYaml(c, indent + 2)).join('\n');
+              return `${y}\n${childrenYaml}`;
+            }
+            return `${y} {}`;
+          }
+          return nodeToYaml(filtered, 0);
+
+        case 'xml':
+          function nodeToXml(n, indent = 0) {
+            const spaces = ' '.repeat(indent);
+            const tag = n.isDirectory ? 'directory' : 'file';
+            let descAttr = n.annotation ? ` description="${escapeHtml(n.annotation)}"` : '';
+            let sizeAttr = n.size ? ` size="${n.size}"` : '';
+
+            if (n.isDirectory) {
+              if (n.children && n.children.length > 0) {
+                const inner = n.children.map(c => nodeToXml(c, indent + 2)).join('\n');
+                return `${spaces}<${tag} name="${escapeHtml(n.name)}"${descAttr}>\n${inner}\n${spaces}</${tag}>`;
+              }
+              return `${spaces}<${tag} name="${escapeHtml(n.name)}"${descAttr} />`;
+            } else {
+              return `${spaces}<${tag} name="${escapeHtml(n.name)}"${sizeAttr}${descAttr} />`;
+            }
+          }
+          return `<?xml version="1.0" encoding="UTF-8"?>\n` + nodeToXml(filtered, 0);
+
+        default:
+          return generateTextTree(filtered);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[m]));
+    }
+
+    function updateStats() {
+      const stats = {
+        files: 0,
+        dirs: 0,
+        totalSize: 0,
+        maxDepth: 0,
+        filteredOut: 0
+      };
+
+      if (!state.rootNode) {
+        document.getElementById('stat-files').textContent = '0';
+        document.getElementById('stat-dirs').textContent = '0';
+        document.getElementById('stat-depth').textContent = '0';
+        document.getElementById('stat-size').textContent = '0 B';
+        document.getElementById('stat-filtered').textContent = '0';
+        document.getElementById('root-folder-name').textContent = 'No Folder Loaded';
+        return;
+      }
+
+      function countAll(n, depth = 1) {
+        if (depth > stats.maxDepth) stats.maxDepth = depth;
+        if (n.isDirectory) {
+          stats.dirs++;
+          if (n.children) n.children.forEach(c => countAll(c, depth + 1));
+        } else {
+          stats.files++;
+          stats.totalSize += (n.size || 0);
+        }
+      }
+
+      countAll(state.rootNode);
+
+      const filtered = getFilteredTree(state.rootNode);
+      let visibleCount = 0;
+      function countVisible(n) {
+        if (!n) return;
+        visibleCount++;
+        if (n.children) n.children.forEach(countVisible);
+      }
+      if (filtered) countVisible(filtered);
+
+      const totalNodes = stats.files + stats.dirs;
+      stats.filteredOut = totalNodes - visibleCount;
+
+      document.getElementById('stat-files').textContent = stats.files.toLocaleString();
+      document.getElementById('stat-dirs').textContent = stats.dirs.toLocaleString();
+      document.getElementById('stat-depth').textContent = stats.maxDepth;
+      document.getElementById('stat-size').textContent = formatBytes(stats.totalSize);
+      document.getElementById('stat-filtered').textContent = Math.max(0, stats.filteredOut).toLocaleString();
+      document.getElementById('root-folder-name').textContent = state.rootNode.name;
+    }
+
+    function renderVisualTree() {
+      const container = document.getElementById('visual-tree-container');
+      container.innerHTML = '';
+
+      const filteredRoot = getFilteredTree(state.rootNode);
+      if (!filteredRoot) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-slate-500">
+            <svg class="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            <p>No files match current filters or directory is empty.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const q = state.searchQuery.toLowerCase().trim();
+
+      function createNodeElement(node, depth = 0) {
+        const isMatch = !q || node.name.toLowerCase().includes(q) || (node.annotation && node.annotation.toLowerCase().includes(q));
+
+        const item = document.createElement('div');
+        item.className = 'group flex flex-col my-0.5';
+
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between py-1 px-2 rounded-lg hover:bg-slate-800/80 transition-colors ${!isMatch ? 'opacity-30' : ''}`;
+        row.style.paddingLeft = `${depth * 1.25 + 0.5}rem`;
+
+        // Left Side: Expand icon + Node name + badges
+        const left = document.createElement('div');
+        left.className = 'flex items-center space-x-2 overflow-hidden mr-2';
+
+        if (node.isDirectory) {
+          const expandBtn = document.createElement('button');
+          expandBtn.className = 'w-4 h-4 text-slate-400 hover:text-slate-200 flex items-center justify-center font-bold';
+          expandBtn.textContent = node.expanded !== false ? '▼' : '▶';
+          expandBtn.onclick = (e) => {
+            e.stopPropagation();
+            node.expanded = !(node.expanded !== false);
+            renderVisualTree();
+          };
+          left.appendChild(expandBtn);
+
+          const icon = document.createElement('span');
+          icon.textContent = '📁';
+          left.appendChild(icon);
+        } else {
+          const indentSpacer = document.createElement('span');
+          indentSpacer.className = 'w-4 inline-block';
+          left.appendChild(indentSpacer);
+
+          const icon = document.createElement('span');
+          icon.textContent = '📄';
+          left.appendChild(icon);
+        }
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = `truncate font-medium ${node.isDirectory ? 'text-brand-300' : 'text-slate-200'}`;
+        nameSpan.textContent = node.name + (node.isDirectory ? '/' : '');
+        left.appendChild(nameSpan);
+
+        if (node.size && !node.isDirectory) {
+          const sizeSpan = document.createElement('span');
+          sizeSpan.className = 'text-[10px] text-slate-500 font-mono ml-1';
+          sizeSpan.textContent = formatBytes(node.size);
+          left.appendChild(sizeSpan);
+        }
+
+        row.appendChild(left);
+
+        // Right Side: Annotation badge + Quick actions
+        const right = document.createElement('div');
+        right.className = 'flex items-center space-x-2 shrink-0';
+
+        if (node.annotation) {
+          const noteBadge = document.createElement('span');
+          noteBadge.className = 'px-2 py-0.5 bg-brand-900/40 text-brand-300 border border-brand-500/20 rounded text-[11px] max-w-[200px] truncate cursor-pointer hover:border-brand-500';
+          noteBadge.textContent = node.annotation;
+          noteBadge.title = node.annotation;
+          noteBadge.onclick = () => openAnnotationModal(node);
+          right.appendChild(noteBadge);
+        }
+
+        // Annotation edit button
+        const editBtn = document.createElement('button');
+        editBtn.className = 'opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-brand-400 transition';
+        editBtn.title = 'Edit documentation note';
+        editBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>`;
+        editBtn.onclick = () => openAnnotationModal(node);
+        right.appendChild(editBtn);
+
+        // Hide node toggle
+        const hideBtn = document.createElement('button');
+        hideBtn.className = 'opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-400 transition';
+        hideBtn.title = 'Hide node from export';
+        hideBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a9.04 9.04 0 012.122-.063c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-1.258 1.258L3 3l18 18"></path></svg>`;
+        hideBtn.onclick = () => {
+          node.hiddenByUser = true;
+          renderApp();
+        };
+        right.appendChild(hideBtn);
+
+        row.appendChild(right);
+        item.appendChild(row);
+
+        // Render children if directory and expanded
+        if (node.isDirectory && node.children && node.expanded !== false) {
+          const childrenContainer = document.createElement('div');
+          childrenContainer.className = 'flex flex-col';
+          node.children.forEach(child => {
+            childrenContainer.appendChild(createNodeElement(child, depth + 1));
+          });
+          item.appendChild(childrenContainer);
+        }
+
+        return item;
+      }
+
+      container.appendChild(createNodeElement(filteredRoot));
+    }
+
+    function renderFormattedOutput() {
+      const filtered = getFilteredTree(state.rootNode);
+      const text = generateTextTree(filtered);
+      const pre = document.getElementById('text-output-pre');
+      pre.textContent = text;
+    }
+
+    function renderExportPreviews() {
+      ['txt', 'md', 'json', 'html', 'yaml', 'xml'].forEach(fmt => {
+        const previewEl = document.getElementById(`export-preview-${fmt}`);
+        if (previewEl) {
+          previewEl.textContent = generateExportContent(fmt);
+        }
+      });
+    }
+
+    function renderApp() {
+      updateStats();
+      renderVisualTree();
+      renderFormattedOutput();
+      renderExportPreviews();
+    }
+
+    function setupEventListeners() {
+      // Load Demo Button
+      document.getElementById('demo-btn').onclick = () => {
+        state.rootNode = createDemoDirectory();
+        autoAnnotateTree(state.rootNode);
+        renderApp();
+        showToast('Sample project structure loaded!');
+      };
+
+      // Clear Button
+      document.getElementById('clear-btn').onclick = () => {
+        state.rootNode = null;
+        renderApp();
+        showToast('Cleared active directory');
+      };
+
+      // File Input & Dropzone
+      const folderInput = document.getElementById('folder-input');
+      const dropZone = document.getElementById('drop-zone');
+
+      dropZone.onclick = () => folderInput.click();
+
+      folderInput.onchange = (e) => {
+        processUploadedFileList(e.target.files);
+      };
+
+      dropZone.ondragover = (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-brand-500', 'bg-brand-500/10');
+      };
+
+      dropZone.ondragleave = () => {
+        dropZone.classList.remove('border-brand-500', 'bg-brand-500/10');
+      };
+
+      dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-brand-500', 'bg-brand-500/10');
+        if (e.dataTransfer.items) {
+          processDirectoryDrop(e.dataTransfer.items);
+        }
+      };
+
+      // Style Selector
+      document.getElementById('style-select').onchange = (e) => {
+        state.style = e.target.value;
+        const customGroup = document.getElementById('custom-symbols-group');
+        if (state.style === 'custom') {
+          customGroup.classList.remove('hidden');
+        } else {
+          customGroup.classList.add('hidden');
+        }
+        renderApp();
+      };
+
+      document.getElementById('symbol-branch').oninput = (e) => {
+        state.customBranch = e.target.value;
+        renderApp();
+      };
+
+      document.getElementById('symbol-last').oninput = (e) => {
+        state.customLast = e.target.value;
+        renderApp();
+      };
+
+      // Depth Slider
+      const depthSlider = document.getElementById('depth-slider');
+      const depthVal = document.getElementById('depth-val');
+      depthSlider.oninput = (e) => {
+        const val = parseInt(e.target.value, 10);
+        state.maxDepth = val;
+        depthVal.textContent = val === 15 ? 'Unlimited' : val;
+        renderApp();
+      };
+
+      // Filter Toggles
+      document.getElementById('toggle-dotfiles').onchange = (e) => {
+        state.hideDotfiles = e.target.checked;
+        renderApp();
+      };
+
+      document.getElementById('toggle-dirs-only').onchange = (e) => {
+        state.dirsOnly = e.target.checked;
+        renderApp();
+      };
+
+      document.getElementById('toggle-sort-dirs').onchange = (e) => {
+        state.sortDirsFirst = e.target.checked;
+        renderApp();
+      };
+
+      document.getElementById('toggle-show-sizes').onchange = (e) => {
+        state.showFileSizes = e.target.checked;
+        renderApp();
+      };
+
+      // Custom Ignores
+      document.getElementById('ignore-patterns-input').oninput = (e) => {
+        state.customIgnoreText = e.target.value;
+        renderApp();
+      };
+
+      // Ignore Chips setup
+      renderIgnoreChips();
+
+      // Documentation Toggles
+      document.getElementById('doc-mode-toggle').onchange = (e) => {
+        state.docMode = e.target.checked;
+        const opts = document.getElementById('doc-options');
+        if (state.docMode) {
+          opts.classList.remove('opacity-40', 'pointer-events-none');
+        } else {
+          opts.classList.add('opacity-40', 'pointer-events-none');
+        }
+        renderApp();
+      };
+
+      document.getElementById('auto-annotate-btn').onclick = () => {
+        if (state.rootNode) {
+          autoAnnotateTree(state.rootNode);
+          renderApp();
+          showToast('Auto-annotated matching standard files');
+        }
+      };
+
+      document.getElementById('comment-style-select').onchange = (e) => {
+        state.commentStyle = e.target.value;
+        renderApp();
+      };
+
+      document.getElementById('align-padding-input').oninput = (e) => {
+        state.alignPadding = parseInt(e.target.value, 10) || 32;
+        renderApp();
+      };
+
+      // Tab Switcher
+      const tabs = [
+        { id: 'tab-visual', content: 'view-visual' },
+        { id: 'tab-formatted', content: 'view-formatted' },
+        { id: 'tab-export', content: 'view-export' }
+      ];
+
+      tabs.forEach(t => {
+        document.getElementById(t.id).onclick = () => {
+          tabs.forEach(other => {
+            const btn = document.getElementById(other.id);
+            const view = document.getElementById(other.content);
+            if (other.id === t.id) {
+              btn.className = 'tab-btn active px-3.5 py-1.5 rounded-md text-xs font-medium transition text-white bg-brand-600 shadow-sm flex items-center space-x-1.5';
+              view.classList.remove('hidden');
+            } else {
+              btn.className = 'tab-btn px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center space-x-1.5';
+              view.classList.add('hidden');
+            }
+          });
+        };
+      });
+
+      // Search Filter Input
+      document.getElementById('node-search-input').oninput = (e) => {
+        state.searchQuery = e.target.value;
+        renderVisualTree();
+      };
+
+      // Expand / Collapse All
+      document.getElementById('expand-all-btn').onclick = () => {
+        setAllExpanded(state.rootNode, true);
+        renderVisualTree();
+      };
+
+      document.getElementById('collapse-all-btn').onclick = () => {
+        setAllExpanded(state.rootNode, false);
+        renderVisualTree();
+      };
+
+      // Text Options
+      document.getElementById('toggle-line-numbers').onchange = (e) => {
+        const pre = document.getElementById('text-output-pre');
+        if (e.target.checked) pre.classList.add('line-numbers');
+        else pre.classList.remove('line-numbers');
+      };
+
+      document.getElementById('toggle-word-wrap').onchange = (e) => {
+        const pre = document.getElementById('text-output-pre');
+        if (e.target.checked) pre.classList.replace('whitespace-pre', 'whitespace-pre-wrap');
+        else pre.classList.replace('whitespace-pre-wrap', 'whitespace-pre');
+      };
+
+      // Copy & Download Main
+      document.getElementById('copy-btn').onclick = () => {
+        const text = generateExportContent(state.selectedFormat);
+        copyToClipboard(text);
+      };
+
+      document.getElementById('download-btn').onclick = () => {
+        const text = generateExportContent(state.selectedFormat);
+        const folderName = state.rootNode ? state.rootNode.name : 'folder-tree';
+        const extMap = { txt: 'txt', md: 'md', json: 'json', html: 'html', yaml: 'yml', xml: 'xml' };
+        downloadFile(`${folderName}-tree.${extMap[state.selectedFormat]}`, text);
+      };
+
+      // Format Copy Buttons in Export Tab
+      document.querySelectorAll('.export-copy-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const fmt = btn.getAttribute('data-format');
+          const content = generateExportContent(fmt);
+          copyToClipboard(content);
+        };
+      });
+
+      // Modal Events
+      document.getElementById('modal-close').onclick = closeAnnotationModal;
+      document.getElementById('modal-cancel-btn').onclick = closeAnnotationModal;
+      document.getElementById('modal-save-btn').onclick = saveAnnotationModal;
+    }
+
+    // Expand/Collapse recursive helper
+    function setAllExpanded(node, isExpanded) {
+      if (!node) return;
+      if (node.isDirectory) {
+        node.expanded = isExpanded;
+        if (node.children) {
+          node.children.forEach(c => setAllExpanded(c, isExpanded));
+        }
+      }
+    }
+
+    // Ignore Chips UI generator
+    function renderIgnoreChips() {
+      const container = document.getElementById('ignore-chips-container');
+      container.innerHTML = '';
+
+      const presets = ['node_modules', '.git', '.DS_Store', 'dist', 'build', '.next', '__pycache__', 'coverage', '.vscode'];
+
+      presets.forEach(name => {
+        const isActive = state.activeIgnores.has(name);
+        const chip = document.createElement('button');
+        chip.className = `px-2 py-0.5 rounded text-[11px] font-mono border transition ${
+          isActive
+            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium'
+            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+        }`;
+        chip.textContent = name;
+        chip.onclick = () => {
+          if (state.activeIgnores.has(name)) {
+            state.activeIgnores.delete(name);
+          } else {
+            state.activeIgnores.add(name);
+          }
+          renderIgnoreChips();
+          renderApp();
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function openAnnotationModal(node) {
+      state.editingNode = node;
+      document.getElementById('modal-node-path').textContent = node.path || node.name;
+      document.getElementById('modal-note-input').value = node.annotation || '';
+      document.getElementById('annotation-modal').classList.remove('hidden');
+      document.getElementById('modal-note-input').focus();
+    }
+
+    function closeAnnotationModal() {
+      state.editingNode = null;
+      document.getElementById('annotation-modal').classList.add('hidden');
+    }
+
+    function saveAnnotationModal() {
+      if (state.editingNode) {
+        state.editingNode.annotation = document.getElementById('modal-note-input').value.trim();
+        renderApp();
+        showToast('Annotation saved');
+      }
+      closeAnnotationModal();
+    }
+
+    // Clipboard copy helper
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Copied to clipboard!');
+        }).catch(() => {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied to clipboard!');
+      } catch (err) {
+        showToast('Failed to copy');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // Download File Helper
+    function downloadFile(filename, text) {
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+      element.setAttribute('download', filename);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      showToast(`Downloaded ${filename}`);
+    }
+
+    // Toast notification display
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    window.onload = function () {
+      setupEventListeners();
+      // Load sample directory initially for immediate interactive playability
+      state.rootNode = createDemoDirectory();
+      autoAnnotateTree(state.rootNode);
+      renderApp();
+    };
+  </script>
+</body>
+</html>
